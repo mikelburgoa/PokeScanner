@@ -11,30 +11,28 @@ Python (versión 3.8 o superior)
 Una API Key gratuita de Google Gemini (consíguela gratis y sin tarjeta en Google AI Studio)
 
 ⚙️ Configuración Inicial (Primera vez)
-1. Clonar el repositorio
-git clone https://github.com/mikelburgoa/PokeScanner.git
 
+Clonar el repositorio
+git clone https://github.com/mikelburgoa/PokeScanner.git
 cd PokeScanner
 
-2. Configurar las variables de entorno (.env)
+Configurar las variables de entorno (.env)
 Copia la plantilla de configuración .env.example para crear tu archivo .env privado:
-
 cp .env.example .env
 
 Abre el archivo .env en tu editor de código y añade tu clave de Gemini:
 
 GEMINI_API_KEY=tu_api_key_de_gemini_aqui
 
-> Nota de seguridad: El archivo .env está protegido en .gitignore para garantizar que tu clave nunca se suba a GitHub.
+Nota de seguridad: El archivo .env está protegido en .gitignore para garantizar que tu clave nunca se suba a GitHub.
 
-3. Instalar dependencias
+Instalar dependencias
 Backend (Python):
-
 cd server
 
 pip install -r requirements.txt
 
-cd ..
+cd …
 
 Frontend (Vue 3):
 
@@ -50,7 +48,7 @@ El servidor de FastAPI (Backend) en el puerto 8000.
 
 El servidor de Vite/Vue 3 (Frontend) en el puerto 3000.
 
-Una vez ejecutado, abre tu navegador e ingresa a http://localhost:3000.
+Una vez ejecutado, abre tu navegador e ingresa a http://localhost:3001.
 
 Opción B: Inicio manual por terminales
 Si prefieres ver la consola en vivo de cada servicio, abre dos terminales separadas:
@@ -83,30 +81,30 @@ npm run dev
 📂 Estructura del Proyecto
 PokeScanner/
 
-├── server/                     # Backend FastAPI (Python)
+├── server/ # Backend FastAPI (Python)
 
-│   ├── data/                   # Almacenamiento de colección (collection.json)
+│ ├── data/ # Almacenamiento de colección (collection.json)
 
-│   ├── excel/                  # Hojas de Excel exportadas
+│ ├── excel/ # Hojas de Excel exportadas
 
-│   ├── services/               # Módulos de IA, TCGdex y exportador Excel
+│ ├── services/ # Módulos de IA, TCGdex y exportador Excel
 
-│   ├── main.py                 # Endpoints de la API REST
+│ ├── main.py # Endpoints de la API REST
 
-│   └── requirements.txt
+│ └── requirements.txt
 
-├── src/                        # Frontend Vue 3 + Tailwind CSS
+├── src/ # Frontend Vue 3 + Tailwind CSS
 
-│   ├── components/             # Escáner de cámara, fichas e interfaz
+│ ├── components/ # Escáner de cámara, fichas e interfaz
 
-│   ├── views/                  # Vistas principales (Escanear, Colección, Ajustes)
+│ ├── views/ # Vistas principales (Escanear, Colección, Ajustes)
 
-│   └── services/api.js         # Cliente HTTP
+│ └── services/api.js # Cliente HTTP
 
-├── .env.example                # Plantilla de variables de entorno pública
+├── .env.example # Plantilla de variables de entorno pública
 
-├── .gitignore                  # Reglas para ocultar claves y archivos locales
+├── .gitignore # Reglas para ocultar claves y archivos locales
 
-├── iniciar_pokescanner.bat     # Lanzador automático para Windows
+├── iniciar_pokescanner.bat # Lanzador automático para Windows
 
 └── package.json
