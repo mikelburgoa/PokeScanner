@@ -46,9 +46,9 @@ Este script ejecutará automáticamente dos terminales en segundo plano:
 
 El servidor de FastAPI (Backend) en el puerto 8000.
 
-El servidor de Vite/Vue 3 (Frontend) en el puerto 3000.
+El servidor de Vite/Vue 3 (Frontend) en el puerto 3001 ( Modificable ).
 
-Una vez ejecutado, abre tu navegador e ingresa a http://localhost:3001.
+Una vez ejecutado, abre tu navegador e ingresa a http://localhost:3001 ( Modificable ).
 
 Opción B: Inicio manual por terminales
 Si prefieres ver la consola en vivo de cada servicio, abre dos terminales separadas:
@@ -67,7 +67,7 @@ Terminal 2 - Frontend (Vue 3 + Vite):
 
 npm run dev
 
-(Abre tu navegador en http://localhost:3000)
+(Abre tu navegador en http://localhost:3001) ( Modificable )
 
 📖 Características Principales
 📷 Escaneo en tiempo real: Visor con guía de encuadre vertical en proporción 3:4 para webcam o subida manual de imágenes.
