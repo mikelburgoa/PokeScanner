@@ -1,0 +1,17 @@
+# Entorno y claves
+.env
+
+# Persistencia local (Colección y Excel exportado)
+server/data/collection.json
+server/data/*.json
+server/excel/
+
+# Dependencias y construcciones
+node_modules/
+dist/
+__pycache__/
+*.py[cod]
+
+# Ajustes de IDE
+.vscode/
+.DS_Store
