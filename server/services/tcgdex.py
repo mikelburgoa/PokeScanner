@@ -56,12 +56,15 @@ def simplify(c):
     
     eur = cm.get("trend") or cm.get("avg") or cm.get("low") or (cm.get("prices") or {}).get("averageSellPrice") or 0.0
     usd = 0.0
+    tp_id = None
+
     for v in ["normal", "holofoil", "reverse-holofoil", "unlimited"]:
         p = tp.get(v) or (tp.get("prices") or {}).get(v)
         if isinstance(p, dict):
             m = p.get("marketPrice") or p.get("midPrice") or p.get("lowPrice")
             if m is not None:
                 usd = float(m)
+                tp_id = p.get("productId")
                 break
 
     img_base = c.get("image") or ""
@@ -77,19 +80,40 @@ def simplify(c):
     set_info = c.get("set") or {}
     cnt = set_info.get("cardCount") or {}
     printed_total = cnt.get("official") or cnt.get("total")
+    card_name = c.get("name", "")
+    card_num = str(c.get("localId") or c.get("number") or "")
+
+    # 1. Enlace exacto para Cardmarket (EUR)
+    cm_id = cm.get("idProduct")
+    if cm_id:
+        cm_url = f"https://www.cardmarket.com/es/Pokemon/Products?idProduct={cm_id}"
+    elif card_name:
+        query_str = f"{card_name} {card_num}".strip()
+        cm_url = f"https://www.cardmarket.com/es/Pokemon/Products/Singles?searchString={urllib.parse.quote(query_str)}"
+    else:
+        cm_url = ""
+
+    # 2. Enlace exacto para TCGplayer (USD)
+    if tp_id:
+        tcg_url = f"https://www.tcgplayer.com/product/{tp_id}"
+    elif card_name:
+        query_str = f"{card_name} {card_num}".strip()
+        tcg_url = f"https://www.tcgplayer.com/search/pokemon/product?q={urllib.parse.quote(query_str)}"
+    else:
+        tcg_url = ""
 
     return {
         "id": c.get("id"),
-        "name": c.get("name", ""),
-        "number": str(c.get("localId") or c.get("number") or ""),
+        "name": card_name,
+        "number": card_num,
         "total": printed_total,
         "rarity": c.get("rarity") or "Común",
         "set": set_info.get("name") if isinstance(set_info, dict) else (set_info or "Sin Expansión"),
         "image": img_url,
         "price_eur": float(eur or 0.0),
         "price_usd": float(usd or 0.0),
-        "cardmarket_url": f"https://www.cardmarket.com/es/Pokemon/Products/Singles?searchString={urllib.parse.quote(c.get('name',''))}",
-        "tcgplayer_url": f"https://www.tcgplayer.com/search/pokemon/product?q={urllib.parse.quote(c.get('name',''))}"
+        "cardmarket_url": cm_url,
+        "tcgplayer_url": tcg_url
     }
 
 def search_cards(name, number="", total="", set_name=""):
@@ -97,7 +121,6 @@ def search_cards(name, number="", total="", set_name=""):
     if not name:
         return []
 
-    # Se busca por nombre limpio en español e inglés como fallback
     briefs = []
     for lang in [TCG_LANG, "en"]:
         try:
@@ -108,7 +131,6 @@ def search_cards(name, number="", total="", set_name=""):
         except Exception:
             pass
 
-    # Si no hay resultados directos, intentar buscar solo la primera palabra (ej: 'Meowth')
     if not briefs and " " in name:
         first_word = name.split()[0]
         for lang in [TCG_LANG, "en"]:

@@ -1,70 +1,228 @@
 <template>
-  <div class="max-w-4xl mx-auto space-y-8 pb-12">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl space-y-6">
+  <div class="max-w-2xl mx-auto space-y-6 pb-12">
+    <div
+      v-if="notice"
+      role="status"
+      class="rounded-2xl px-5 py-3 text-sm border"
+      :class="notice.type === 'ok'
+        ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300'
+        : 'bg-red-950/40 border-red-500/40 text-red-300'"
+    >
+      {{ notice.text }}
+    </div>
+
+    <!-- IA -->
+    <section class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-5 shadow-xl">
       <div>
-        <h2 class="text-2xl font-black text-white">⚙️ Ajustes de Configuración</h2>
-        <p class="text-sm text-slate-400 mt-1">Configura las claves de API de IA y gestiona los datos de tu colección.</p>
+        <h2 class="text-xl font-black text-white">🤖 Lectura de fotos (IA)</h2>
+        <p class="text-sm text-slate-400 mt-1">
+          Elige qué IA identifica tus cartas. Las claves se guardan solo en tu equipo
+          (<code class="font-mono text-slate-300">server/data/settings.json</code>) y no se vuelven a mostrar.
+        </p>
       </div>
 
-      <div class="space-y-4 pt-4 border-t border-slate-800">
+      <p v-if="!info" class="text-sm text-slate-400">Cargando…</p>
+
+      <template v-else>
         <div>
-          <label class="block text-sm font-semibold text-slate-300 mb-1">Clave de API de Gemini (Google AI Studio)</label>
-          <input type="password" v-model="geminiKey" placeholder="AIza..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 outline-none focus:border-red-500 font-mono transition-colors" />
-          <p class="text-xs text-slate-500 mt-1">La aplicación incluye una clave integrada por defecto. Puedes proporcionar tu propia clave si lo prefieres.</p>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1" for="ai-provider">Proveedor</label>
+          <select id="ai-provider" v-model="form.provider" class="w-full bg-slate-950 border border-slate-800 text-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-red-500 transition-colors">
+            <option value="auto">Automático (el primero con clave: Gemini, Claude, OpenAI)</option>
+            <option v-for="(p, id) in info.providers" :key="id" :value="id">{{ p.label }}</option>
+          </select>
         </div>
 
-        <button @click="saveSettings" class="px-6 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold rounded-xl shadow-lg shadow-red-600/30 transition-all">
-          Guardar Ajustes
+        <div
+          v-for="(p, id) in info.providers"
+          :key="id"
+          class="rounded-xl border p-4 space-y-3 transition-colors"
+          :class="form.provider === id ? 'border-red-500' : 'border-slate-800'"
+        >
+          <div class="flex flex-wrap items-center gap-2">
+            <h3 class="font-bold text-white text-sm">{{ p.label }}</h3>
+            <span
+              class="text-xs font-semibold rounded-full px-2 py-0.5"
+              :class="p.needsKey && p.hasKey ? 'bg-emerald-950 text-emerald-300' : 'bg-slate-800 text-slate-400'"
+            >
+              {{ !p.needsKey ? 'Sin clave' : p.hasKey ? 'Clave guardada' : 'Sin clave' }}
+            </span>
+          </div>
+          <p class="text-xs text-slate-400">
+            {{ META[id].hint }}
+            <a :href="META[id].link" target="_blank" rel="noopener" class="underline hover:text-white">{{ META[id].linkText }}</a>
+          </p>
+
+          <div v-if="p.needsKey">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1" :for="`key-${id}`">API key</label>
+            <div class="flex gap-2">
+              <input
+                :id="`key-${id}`"
+                v-model="form.keys[id]"
+                type="password"
+                autocomplete="off"
+                spellcheck="false"
+                :placeholder="p.hasKey ? '•••••••• (deja vacío para conservarla)' : 'Pega aquí tu clave'"
+                class="w-full min-w-0 bg-slate-950 border border-slate-800 text-slate-200 rounded-xl px-3 py-2 text-sm font-mono outline-none focus:border-red-500 transition-colors"
+              />
+              <button v-if="p.hasKey" type="button" @click="removeKey(id)" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-semibold rounded-xl transition-all">
+                Borrar
+              </button>
+            </div>
+          </div>
+          <div v-else>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1" for="ollama-url">URL de Ollama</label>
+            <input id="ollama-url" v-model="form.ollamaUrl" placeholder="http://localhost:11434" class="w-full bg-slate-950 border border-slate-800 text-slate-200 rounded-xl px-3 py-2 text-sm font-mono outline-none focus:border-red-500 transition-colors" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1" :for="`model-${id}`">Modelo</label>
+            <input :id="`model-${id}`" v-model="form.models[id]" autocomplete="off" class="w-full bg-slate-950 border border-slate-800 text-slate-200 rounded-xl px-3 py-2 text-sm font-mono outline-none focus:border-red-500 transition-colors" />
+          </div>
+        </div>
+
+        <button type="button" :disabled="saving" @click="saveAi" class="px-5 py-3 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-bold rounded-xl transition-all">
+          {{ saving ? 'Guardando…' : 'Guardar ajustes de IA' }}
+        </button>
+      </template>
+    </section>
+
+    <!-- Gestión -->
+    <section class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+      <div>
+        <h2 class="text-xl font-black text-white">🧰 Gestión de Excel y pruebas</h2>
+        <p class="text-sm text-slate-400 mt-1">Opciones para restablecer archivos, borrar el Excel o vaciar la colección durante tus pruebas.</p>
+      </div>
+      <div class="flex flex-col gap-3">
+        <button type="button" @click="deleteExcel" class="px-5 py-3 bg-red-700 hover:bg-red-600 text-white font-semibold rounded-xl transition-all text-left">
+          🗑️ Borrar archivo Excel (coleccion_pokemon.xlsx)
+        </button>
+        <button type="button" @click="emptyCollection" class="px-5 py-3 bg-red-700 hover:bg-red-600 text-white font-semibold rounded-xl transition-all text-left">
+          🧹 Vaciar toda la colección
+        </button>
+        <button type="button" @click="resetAll" class="px-5 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl transition-all text-left">
+          🔄 Restablecer todo (colección + Excel)
         </button>
       </div>
-
-      <div class="space-y-4 pt-6 border-t border-slate-800">
-        <h3 class="font-bold text-lg text-white">Zona de Peligro / Gestión de Datos</h3>
-        <p class="text-sm text-slate-400">Acciones de mantenimiento y borrado de la colección local.</p>
-
-        <div class="flex flex-wrap gap-4 pt-2">
-          <button @click="clearCol" class="px-5 py-2.5 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-400 font-semibold rounded-xl transition-all">
-            🗑️ Vaciar Colección Completa
-          </button>
-          <button @click="clearExcelFile" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl transition-all border border-slate-700">
-            🧹 Limpiar Archivo Excel Temporal
-          </button>
-        </div>
-      </div>
-    </div>
+    </section>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
+import { getSettings, saveSettings, clearExcel, clearCollection } from '../services/api'
 
+// App.vue pasa estos dos a todas las vistas desde <router-view>
+defineProps({ collection: { type: Array, default: () => [] } })
 const emit = defineEmits(['refreshCollection'])
-const geminiKey = ref(localStorage.getItem('cc_gemini_key') || '')
 
-function saveSettings() {
-  localStorage.setItem('cc_gemini_key', geminiKey.value)
-  alert('Ajustes guardados correctamente.')
+// Textos fijos de cada proveedor (el estado real viene del servidor)
+const META = {
+  gemini: {
+    hint: 'Gratis (con límites) y sin tarjeta.',
+    link: 'https://aistudio.google.com/apikey',
+    linkText: 'Conseguir una key en AI Studio',
+  },
+  anthropic: {
+    hint: 'API de pago. No es lo mismo que la suscripción de Claude.ai.',
+    link: 'https://console.anthropic.com/settings/keys',
+    linkText: 'Crear una key en Anthropic Console',
+  },
+  openai: {
+    hint: 'API de pago. No es lo mismo que ChatGPT Plus.',
+    link: 'https://platform.openai.com/api-keys',
+    linkText: 'Crear una key en OpenAI',
+  },
+  ollama: {
+    hint: 'Corre en tu propio PC, sin clave ni coste. Necesita un modelo con visión (p. ej. «ollama pull qwen2.5vl»).',
+    link: 'https://ollama.com/download',
+    linkText: 'Descargar Ollama',
+  },
+}
+const KEYED = ['gemini', 'anthropic', 'openai']
+
+const info = ref(null) // respuesta de GET /api/settings
+const saving = ref(false)
+const notice = ref(null)
+let noticeTimer
+
+const form = reactive({
+  provider: 'auto',
+  ollamaUrl: '',
+  keys: { gemini: '', anthropic: '', openai: '' },
+  models: { gemini: '', anthropic: '', openai: '', ollama: '' },
+})
+
+function say(text, type = 'ok') {
+  notice.value = { type, text }
+  clearTimeout(noticeTimer)
+  noticeTimer = setTimeout(() => (notice.value = null), type === 'ok' ? 3000 : 6000)
 }
 
-async function clearCol() {
-  if (!confirm('¿Estás seguro de que deseas vaciar toda la colección? Esta acción no se puede deshacer.')) return
+function applyInfo(s) {
+  info.value = s
+  form.provider = s.provider
+  form.ollamaUrl = s.ollamaUrl
+  for (const [id, p] of Object.entries(s.providers)) form.models[id] = p.model
+  KEYED.forEach((id) => (form.keys[id] = ''))
+}
+
+onMounted(() =>
+  getSettings()
+    .then(applyInfo)
+    .catch((e) => say(e.message, 'error')),
+)
+
+async function saveAi() {
+  saving.value = true
   try {
-    const res = await fetch('/api/clear_collection', { method: 'POST' })
-    if (res.ok) {
-      emit('refreshCollection')
-      alert('Colección vaciada con éxito.')
-    }
+    const keys = {}
+    KEYED.forEach((id) => {
+      if (form.keys[id].trim()) keys[id] = form.keys[id].trim()
+    })
+    applyInfo(await saveSettings({ provider: form.provider, keys, models: { ...form.models }, ollamaUrl: form.ollamaUrl }))
+    say('Ajustes de IA guardados.')
   } catch (e) {
-    alert('Error al vaciar colección')
+    say(e.message, 'error')
+  } finally {
+    saving.value = false
   }
 }
 
-async function clearExcelFile() {
+async function removeKey(id) {
+  if (!confirm('¿Borrar la API key guardada de ' + info.value.providers[id].label + '?')) return
   try {
-    await fetch('/api/clear_excel', { method: 'POST' })
-    alert('Archivo Excel temporal limpiado.')
+    applyInfo(await saveSettings({ keys: { [id]: null } }))
+    say('Clave borrada.')
   } catch (e) {
-    alert('Error al limpiar Excel')
+    say(e.message, 'error')
   }
+}
+
+async function run(fn, okMsg, refresh = false) {
+  try {
+    await fn()
+    if (refresh) emit('refreshCollection')
+    say(okMsg)
+  } catch (e) {
+    say(e.message || 'Ha ocurrido un error.', 'error')
+  }
+}
+
+function deleteExcel() {
+  if (!confirm('¿Deseas eliminar el archivo coleccion_pokemon.xlsx del servidor?')) return
+  run(clearExcel, 'Archivo Excel eliminado correctamente.')
+}
+
+function emptyCollection() {
+  if (!confirm('¿Seguro que quieres vaciar la colección entera? Se borrarán todas las cartas.')) return
+  run(clearCollection, 'Colección vaciada.', true)
+}
+
+function resetAll() {
+  if (!confirm('¿Restablecer todo? Se borrarán la colección y el archivo Excel.')) return
+  run(async () => {
+    await clearCollection()
+    await clearExcel()
+  }, 'Todo restablecido a cero.', true)
 }
 </script>

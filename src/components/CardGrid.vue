@@ -25,14 +25,34 @@
           <div>
             <p class="text-xs text-slate-400">Valor Estimado</p>
             <p class="text-lg font-extrabold text-emerald-400 font-mono">
-              {{ ((card.price_eur || 0) * (card.condition === 'LP' ? 0.85 : card.condition === 'MP' ? 0.70 : card.condition === 'HP' ? 0.50 : 1.0) * (card.quantity || 1)).toFixed(2) }} €
+              {{ ((card.price_eur || card.price || 0) * (card.condition === 'LP' ? 0.85 : card.condition === 'MP' ? 0.70 : card.condition === 'HP' ? 0.50 : 1.0) * (card.quantity || 1)).toFixed(2) }} €
             </p>
           </div>
 
           <div class="flex items-center space-x-2">
-            <a v-if="card.cardmarket_url" :href="card.cardmarket_url" target="_blank" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors" title="Ver en Cardmarket">
+            <!-- Cardmarket (Europa) -->
+            <a 
+              :href="getCardmarketUrl(card)" 
+              target="_blank" 
+              rel="noopener"
+              class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors flex items-center justify-center" 
+              title="Ver en Cardmarket (EUR)"
+            >
               🛒
             </a>
+
+            <!-- TCGplayer (EE.UU.) -->
+            <a 
+              :href="getTcgplayerUrl(card)" 
+              target="_blank" 
+              rel="noopener"
+              class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-400 text-xs transition-colors flex items-center justify-center font-bold" 
+              title="Ver en TCGplayer (USD)"
+            >
+              🇺🇸
+            </a>
+
+            <!-- Eliminar -->
             <button @click="$emit('delete', card.uid)" class="p-2 rounded-xl bg-red-600/20 hover:bg-red-600/30 text-red-400 text-xs transition-colors" title="Eliminar carta">
               🗑️
             </button>
@@ -48,4 +68,20 @@ defineProps({
   collection: { type: Array, required: true }
 })
 defineEmits(['delete'])
+
+function getCardmarketUrl(card) {
+  if (card.cardmarket_url && card.cardmarket_url.includes('idProduct=')) {
+    return card.cardmarket_url
+  }
+  const query = `${card.name || ''} ${card.number || ''}`.trim()
+  return `https://www.cardmarket.com/es/Pokemon/Products/Singles?searchString=${encodeURIComponent(query)}`
+}
+
+function getTcgplayerUrl(card) {
+  if (card.tcgplayer_url && card.tcgplayer_url.includes('/product/')) {
+    return card.tcgplayer_url
+  }
+  const query = `${card.name || ''} ${card.number || ''}`.trim()
+  return `https://www.tcgplayer.com/search/pokemon/product?q=${encodeURIComponent(query)}`
+}
 </script>

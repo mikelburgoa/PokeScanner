@@ -17,17 +17,31 @@
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 bg-slate-950/60 p-4 rounded-xl border border-slate-800">
         <div>
           <span class="text-xs text-slate-400 block">Precio Cardmarket</span>
-          <span class="text-lg font-bold text-emerald-400 font-mono">{{ (card.price_eur || 0).toFixed(2) }} €</span>
+          <span class="text-lg font-bold text-emerald-400 font-mono">{{ (card.price_eur || card.price || 0).toFixed(2) }} €</span>
         </div>
         <div>
           <span class="text-xs text-slate-400 block">Precio TCGplayer</span>
-          <span class="text-lg font-bold text-sky-400 font-mono">${{ (card.price_usd || 0).toFixed(2) }}</span>
+          <span class="text-lg font-bold text-sky-400 font-mono">${{ (card.price_usd || card.usd || 0).toFixed(2) }}</span>
         </div>
         <div class="col-span-2 sm:col-span-1">
-          <span class="text-xs text-slate-400 block">Enlaces</span>
-          <div class="flex space-x-2 mt-1">
-            <a v-if="card.cardmarket_url" :href="card.cardmarket_url" target="_blank" class="text-xs text-indigo-400 hover:underline">Cardmarket ↗</a>
-            <a v-if="card.tcgplayer_url" :href="card.tcgplayer_url" target="_blank" class="text-xs text-indigo-400 hover:underline">TCGplayer ↗</a>
+          <span class="text-xs text-slate-400 block">Enlaces exactos</span>
+          <div class="flex space-x-3 mt-1">
+            <a 
+              :href="getCardmarketUrl(card)" 
+              target="_blank" 
+              rel="noopener"
+              class="text-xs text-indigo-400 hover:underline font-semibold"
+            >
+              Cardmarket ↗
+            </a>
+            <a 
+              :href="getTcgplayerUrl(card)" 
+              target="_blank" 
+              rel="noopener"
+              class="text-xs text-sky-400 hover:underline font-semibold"
+            >
+              TCGplayer ↗
+            </a>
           </div>
         </div>
       </div>
@@ -70,6 +84,18 @@ const emit = defineEmits(['save', 'cancel'])
 
 const condition = ref('NM')
 const quantity = ref(1)
+
+function getCardmarketUrl(c) {
+  if (c.cardmarket_url && c.cardmarket_url.includes('idProduct=')) return c.cardmarket_url
+  const q = `${c.name || ''} ${c.number || ''}`.trim()
+  return `https://www.cardmarket.com/es/Pokemon/Products/Singles?searchString=${encodeURIComponent(q)}`
+}
+
+function getTcgplayerUrl(c) {
+  if (c.tcgplayer_url && c.tcgplayer_url.includes('/product/')) return c.tcgplayer_url
+  const q = `${c.name || ''} ${c.number || ''}`.trim()
+  return `https://www.tcgplayer.com/search/pokemon/product?q=${encodeURIComponent(q)}`
+}
 
 function save() {
   emit('save', {
