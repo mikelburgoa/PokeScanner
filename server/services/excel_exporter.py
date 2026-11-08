@@ -33,12 +33,19 @@ def export_excel_file(items, output_path, session_date=None):
     ws_resumen = wb.active
     ws_resumen.title = "Resumen"
 
+    # Estilos compartidos
     header_fill = PatternFill(start_color="1E293B", end_color="1E293B", fill_type="solid")
     header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+    zebra_fill = PatternFill(start_color="F8FAFC", end_color="F8FAFC", fill_type="solid")
+    
     thin_border = Border(
         left=Side(style="thin", color="CBD5E1"), right=Side(style="thin", color="CBD5E1"),
         top=Side(style="thin", color="CBD5E1"), bottom=Side(style="thin", color="CBD5E1")
     )
+    total_top_border = Side(style="thin", color="0F172A")
+    total_bottom_border = Side(style="double", color="0F172A")
+    total_border = Border(left=Side(style="thin", color="CBD5E1"), right=Side(style="thin", color="CBD5E1"),
+                          top=total_top_border, bottom=total_bottom_border)
 
     by_set = {}
     for it in items:
@@ -53,6 +60,7 @@ def export_excel_file(items, output_path, session_date=None):
 
     set_totals = {}
 
+    # --- PESTAÑAS DETALLADAS DE CADA EXPANSIÓN ---
     for sname, set_items in by_set.items():
         sheet_title = sanitize_sheet_name(sname)
         ws = wb.create_sheet(sheet_title)
@@ -81,16 +89,22 @@ def export_excel_file(items, output_path, session_date=None):
             set_val += tot_p
             set_qty += qty
 
+            url_val = it.get("cardmarket_url") or ""
             row_data = [
                 it.get("uid"), it.get("id"), it.get("name"), it.get("number"),
-                it.get("rarity"), cond, qty, it.get("cardmarket_url") or "",
+                it.get("rarity"), cond, qty, "Ver en Cardmarket" if url_val else "",
                 unit_p, tot_p
             ]
+
+            is_even = (r_idx % 2 == 0)
 
             for c_idx, val in enumerate(row_data, 1):
                 cell = ws.cell(row=r_idx, column=c_idx, value=val)
                 cell.border = thin_border
                 cell.alignment = Alignment(vertical="center")
+                
+                if is_even:
+                    cell.fill = zebra_fill
 
                 if c_idx in [1, 2, 4, 5, 6]:
                     cell.alignment = Alignment(horizontal="center", vertical="center")
@@ -100,14 +114,27 @@ def export_excel_file(items, output_path, session_date=None):
                 elif c_idx in [9, 10]:
                     cell.alignment = Alignment(horizontal="right", vertical="center")
                     cell.number_format = '#,##0.00 "€"'
-                elif c_idx == 8 and val:
-                    cell.hyperlink = val
-                    cell.font = Font(name="Calibri", size=11, color="0000FF", underline="single")
+                elif c_idx == 8 and url_val:
+                    cell.hyperlink = url_val
+                    cell.font = Font(name="Calibri", size=11, color="2563EB", underline="single")
+                    cell.alignment = Alignment(horizontal="center", vertical="center")
 
-            ws.row_dimensions[r_idx].height = 20
+            ws.row_dimensions[r_idx].height = 22
             r_idx += 1
 
+        # Auto-ajuste de ancho de columnas para la pestaña de expansión
+        for col_idx in range(1, len(headers_detail) + 1):
+            col_letter = get_column_letter(col_idx)
+            max_len = 0
+            for row_j in range(1, r_idx):
+                cell_val = str(ws.cell(row=row_j, column=col_idx).value or "")
+                if len(cell_val) > max_len:
+                    max_len = len(cell_val)
+            ws.column_dimensions[col_letter].width = max(max_len + 5, 14)
+
         set_totals[sname] = {"qty": set_qty, "val": round(set_val, 2), "count": len(set_items)}
+
+    # --- PESTAÑA PRINCIPAL DE RESUMEN ---
     ws_resumen.views.sheetView[0].showGridLines = True
     res_headers = ["Expansión", "Cartas Únicas", "Total Copias", f"Valor Total ({session_date})"]
     for col_num, h in enumerate(res_headers, 1):
@@ -124,7 +151,12 @@ def export_excel_file(items, output_path, session_date=None):
     tot_valor = 0.0
 
     for sname, info in sorted(set_totals.items(), key=lambda x: x[0]):
-        ws_resumen.cell(row=r_idx, column=1, value=sname).border = thin_border
+        is_even = (r_idx % 2 == 0)
+
+        cell_s = ws_resumen.cell(row=r_idx, column=1, value=sname)
+        cell_s.border = thin_border
+        cell_s.alignment = Alignment(vertical="center")
+
         cell_u = ws_resumen.cell(row=r_idx, column=2, value=info["count"])
         cell_u.border = thin_border
         cell_u.alignment = Alignment(horizontal="center", vertical="center")
@@ -139,38 +171,47 @@ def export_excel_file(items, output_path, session_date=None):
         cell_v.alignment = Alignment(horizontal="right", vertical="center")
         cell_v.number_format = '#,##0.00 "€"'
 
-        ws_resumen.row_dimensions[r_idx].height = 20
+        if is_even:
+            cell_s.fill = zebra_fill
+            cell_u.fill = zebra_fill
+            cell_c.fill = zebra_fill
+            cell_v.fill = zebra_fill
+
+        ws_resumen.row_dimensions[r_idx].height = 22
         tot_cartas += info["count"]
         tot_copias += info["qty"]
         tot_valor += info["val"]
         r_idx += 1
 
+    # Fila de TOTAL GENERAL
     tot_row = r_idx
-    ws_resumen.cell(row=tot_row, column=1, value="TOTAL GENERAL").font = Font(name="Calibri", size=11, bold=True)
-    ws_resumen.cell(row=tot_row, column=1).border = thin_border
+    cell_tot_lbl = ws_resumen.cell(row=tot_row, column=1, value="TOTAL GENERAL")
+    cell_tot_lbl.font = Font(name="Calibri", size=11, bold=True)
+    cell_tot_lbl.border = total_border
+    cell_tot_lbl.alignment = Alignment(vertical="center")
 
     cell = ws_resumen.cell(row=tot_row, column=2, value=tot_cartas)
     cell.font = Font(name="Calibri", size=11, bold=True)
-    cell.border = thin_border
+    cell.border = total_border
     cell.alignment = Alignment(horizontal="center", vertical="center")
 
     cell = ws_resumen.cell(row=tot_row, column=3, value=tot_copias)
     cell.font = Font(name="Calibri", size=11, bold=True)
-    cell.border = thin_border
+    cell.border = total_border
     cell.alignment = Alignment(horizontal="right", vertical="center")
     cell.number_format = "#,##0"
 
     cell = ws_resumen.cell(row=tot_row, column=4, value=round(tot_valor, 2))
     cell.font = Font(name="Calibri", size=11, bold=True)
-    cell.border = thin_border
+    cell.border = total_border
     cell.alignment = Alignment(horizontal="right", vertical="center")
     cell.number_format = '#,##0.00 "€"'
-    ws_resumen.row_dimensions[tot_row].height = 22
+    ws_resumen.row_dimensions[tot_row].height = 26
 
+    # Auto-ajuste de ancho de columnas para el Resumen
     for col_idx in range(1, 5):
         col_letter = get_column_letter(col_idx)
-        max_len = max(len(str(ws_resumen.cell(row=row_j, column=col_idx).value or "")) for row_j in range(1, r_idx))
-        ws_resumen.column_dimensions[col_letter].width = max(max_len + 6, 16)
+        max_len = max(len(str(ws_resumen.cell(row=row_j, column=col_idx).value or "")) for row_j in range(1, r_idx + 1))
+        ws_resumen.column_dimensions[col_letter].width = max(max_len + 6, 18)
 
     wb.save(output_path)
-

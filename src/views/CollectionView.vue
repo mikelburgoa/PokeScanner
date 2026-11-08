@@ -18,12 +18,12 @@
       </div>
 
       <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
-        <button @click="handleRefresh" :disabled="refreshing" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-semibold rounded-xl transition-all flex items-center space-x-2 border border-slate-700">
-          <span>🔄</span><span>Actualizar precios</span>
+        <button @click="handleRefresh" :disabled="refreshing" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-semibold rounded-xl transition-all flex items-center space-x-2 border border-slate-700 disabled:opacity-50">
+          <span>🔄</span><span>{{ refreshing ? 'Actualizando...' : 'Actualizar precios' }}</span>
         </button>
-        <a :href="excelUrl" target="_blank" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-emerald-600/30 transition-all flex items-center space-x-2">
-          <span>📊</span><span>Exportar Excel</span>
-        </a>
+        <button @click="handleExportExcel" :disabled="exporting" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-emerald-600/30 transition-all flex items-center space-x-2 disabled:opacity-50">
+          <span>📊</span><span>{{ exporting ? 'Exportando...' : 'Exportar Excel' }}</span>
+        </button>
       </div>
     </div>
 
@@ -59,7 +59,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import CardGrid from '../components/CardGrid.vue'
-import { deleteCard, refreshPrices, getExcelDownloadUrl } from '../services/api'
+import { deleteCard, refreshPrices, api } from '../services/api'
 
 const props = defineProps({
   collection: { type: Array, required: true }
@@ -69,6 +69,7 @@ const emit = defineEmits(['refreshCollection'])
 const searchQuery = ref('')
 const selectedSet = ref('')
 const refreshing = ref(false)
+const exporting = ref(false)
 
 const COND_MULT = { NM: 1.0, LP: 0.85, MP: 0.70, HP: 0.50 }
 
@@ -96,8 +97,6 @@ const filteredCollection = computed(() => {
   })
 })
 
-const excelUrl = computed(() => getExcelDownloadUrl())
-
 async function removeCard(uid) {
   if (!confirm('¿Seguro que deseas eliminar esta carta de la colección?')) return
   try {
@@ -118,6 +117,22 @@ async function handleRefresh() {
     alert(e.message || 'Error actualizando precios')
   } finally {
     refreshing.value = false
+  }
+}
+
+async function handleExportExcel() {
+  if (props.collection.length === 0) {
+    alert('No hay cartas en la colección para exportar.')
+    return
+  }
+  exporting.value = true
+  try {
+    const res = await api.get('/api/export_excel')
+    alert(res.message || 'Excel generado y actualizado correctamente en server/excel/')
+  } catch (e) {
+    alert(e.message || 'Error al exportar el archivo Excel')
+  } finally {
+    exporting.value = false
   }
 }
 </script>
