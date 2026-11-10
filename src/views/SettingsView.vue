@@ -91,6 +91,39 @@
       </template>
     </section>
 
+    <!-- Auditoría de Seguridad -->
+    <section class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-xl font-black text-white">🛡️ Auditoría de Seguridad</h2>
+          <p class="text-sm text-slate-400 mt-1">Escaneo interno del sistema y estado de protección de API Keys.</p>
+        </div>
+        <button type="button" @click="checkSecurity" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg transition-all">
+          Reescanear
+        </button>
+      </div>
+
+      <div v-if="auditData" class="rounded-xl border p-4 space-y-3" :class="auditData.passed ? 'border-emerald-500/40 bg-emerald-950/20' : 'border-red-500/40 bg-red-950/20'">
+        <div class="flex items-center gap-2">
+          <span class="text-lg">{{ auditData.passed ? '✅' : '⚠️' }}</span>
+          <h3 class="font-bold text-sm" :class="auditData.passed ? 'text-emerald-400' : 'text-red-400'">
+            {{ auditData.passed ? 'Sistema Seguro: Sin vulnerabilidades ni fugas de claves' : 'Se encontraron advertencias de seguridad' }}
+          </h3>
+        </div>
+
+        <div v-if="auditData.findings.length > 0" class="space-y-2 pt-2">
+          <div v-for="(f, i) in auditData.findings" :key="i" class="bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs space-y-1">
+            <div class="flex justify-between font-bold text-slate-200">
+              <span>{{ f.category }}</span>
+              <span class="text-red-400 uppercase font-mono">{{ f.severity }}</span>
+            </div>
+            <p class="text-slate-300">{{ f.issue }}</p>
+            <p class="text-slate-400 italic">💡 Solución: {{ f.fix }}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Gestión -->
     <section class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
       <div>
@@ -114,7 +147,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { getSettings, saveSettings, clearExcel, clearCollection } from '../services/api'
+import { getSettings, saveSettings, clearExcel, clearCollection, getSecurityAudit } from '../services/api'
 
 defineProps({ collection: { type: Array, default: () => [] } })
 const emit = defineEmits(['refreshCollection'])
@@ -144,6 +177,7 @@ const META = {
 const KEYED = ['gemini', 'anthropic', 'openai']
 
 const info = ref(null)
+const auditData = ref(null)
 const saving = ref(false)
 const notice = ref(null)
 let noticeTimer
@@ -169,11 +203,20 @@ function applyInfo(s) {
   KEYED.forEach((id) => (form.keys[id] = ''))
 }
 
-onMounted(() =>
+async function checkSecurity() {
+  try {
+    auditData.value = await getSecurityAudit()
+  } catch (e) {
+    console.error('Error obteniendo la auditoría:', e)
+  }
+}
+
+onMounted(() => {
   getSettings()
     .then(applyInfo)
-    .catch((e) => say(e.message, 'error')),
-)
+    .catch((e) => say(e.message, 'error'))
+  checkSecurity()
+})
 
 async function saveAi() {
   saving.value = true

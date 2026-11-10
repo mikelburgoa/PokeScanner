@@ -2,6 +2,7 @@
 from fastapi import APIRouter, HTTPException
 
 from core import config, user_settings
+from core.security_audit import run_security_audit
 from schemas import SettingsPatch
 from services import ai
 
@@ -25,3 +26,7 @@ def put_settings(body: SettingsPatch):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return user_settings.public()
+
+@router.get("/security-audit")
+def get_security_audit():
+    return run_security_audit()
