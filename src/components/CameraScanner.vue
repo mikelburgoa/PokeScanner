@@ -1,52 +1,43 @@
 <template>
-  <div class="relative bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col items-center justify-center p-4 w-full max-w-md mx-auto">
-    <!-- Marco del visor de cámara / previsualización -->
-    <div class="relative w-full aspect-[3/4] max-w-[340px] rounded-xl overflow-hidden bg-slate-950 flex items-center justify-center border border-slate-800 shadow-inner">
-      <video ref="videoRef" playsinline autoplay muted class="w-full h-full object-cover" :hidden="!isCameraActive"></video>
-      <img v-if="previewUrl && !isCameraActive" :src="previewUrl" class="w-full h-full object-contain bg-slate-950" alt="Carta escaneada" />
+  <div class="relative w-full aspect-[2.5/3.5] max-w-[360px] mx-auto rounded-2xl overflow-hidden bg-zinc-950 flex items-center justify-center border border-zinc-800 shadow-2xl group">
+    <!-- Video en vivo -->
+    <video ref="videoRef" playsinline autoplay muted class="w-full h-full object-cover" :hidden="!isCameraActive"></video>
+    
+    <!-- Imagen capturada / subida -->
+    <img v-if="previewUrl && !isCameraActive" :src="previewUrl" class="w-full h-full object-contain bg-zinc-950" alt="Carta escaneada" />
+    
+    <!-- Placeholder sin cámara -->
+    <div v-if="!isCameraActive && !previewUrl" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-zinc-500">
+      <div class="w-16 h-16 mb-4 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 shadow-inner group-hover:border-rose-500/40 transition-colors">
+        <svg class="w-8 h-8 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      </div>
+      <p class="font-bold text-base text-zinc-200 font-heading">Coloca la carta aquí o activa la cámara</p>
+      <p class="text-xs text-zinc-500 mt-2 leading-relaxed">También puedes arrastrar una imagen o usar el botón para subir</p>
+    </div>
+
+    <!-- Guía de encuadre en vivo con esquinas rojas mate -->
+    <div v-if="isCameraActive" class="absolute inset-5 border border-rose-500/40 rounded-xl pointer-events-none flex items-center justify-center">
+      <div class="absolute top-0 left-0 w-5 h-5 border-t-2 border-l-2 border-rose-500 rounded-tl"></div>
+      <div class="absolute top-0 right-0 w-5 h-5 border-t-2 border-r-2 border-rose-500 rounded-tr"></div>
+      <div class="absolute bottom-0 left-0 w-5 h-5 border-b-2 border-l-2 border-rose-500 rounded-bl"></div>
+      <div class="absolute bottom-0 right-0 w-5 h-5 border-b-2 border-r-2 border-rose-500 rounded-br"></div>
       
-      <div v-if="!isCameraActive && !previewUrl" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-slate-500">
-        <div class="w-16 h-16 mb-3 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-2xl shadow">📷</div>
-        <p class="font-medium text-slate-300">Coloca la carta aquí o activa la cámara</p>
-        <p class="text-xs text-slate-500 mt-1">También puedes arrastrar una imagen o usar el botón de subir</p>
-      </div>
-
-      <!-- Guía de encuadre en vivo -->
-      <div v-if="isCameraActive" class="absolute inset-6 border-2 border-dashed border-red-500/50 rounded-xl pointer-events-none flex items-center justify-center">
-        <span class="bg-slate-900/80 text-red-400 text-xs px-3 py-1 rounded-full font-mono uppercase tracking-wider backdrop-blur-sm border border-red-500/30">Encuadra la carta</span>
-      </div>
+      <span class="bg-zinc-950/80 text-rose-400 text-[10px] px-3 py-1 rounded-full font-mono uppercase tracking-wider backdrop-blur-md border border-rose-500/30">
+        Alinea la carta
+      </span>
     </div>
 
-    <!-- Controles -->
-    <div class="mt-4 flex flex-wrap items-center justify-center gap-3 w-full">
-      <button v-if="!isCameraActive" @click="startCamera" class="px-5 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-semibold rounded-xl shadow-lg shadow-red-600/30 transition-all flex items-center space-x-2">
-        <span>📷</span><span>Activar cámara</span>
-      </button>
-
-      <button v-if="isCameraActive" @click="capturePhoto" class="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/30 transition-all flex items-center space-x-2 animate-pulse">
-        <span>📸</span><span>Capturar carta (Espacio)</span>
-      </button>
-
-      <button v-if="isCameraActive" @click="stopCamera" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl transition-all">
-        Detener cámara
-      </button>
-
-      <button @click="triggerFileInput" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl transition-all flex items-center space-x-2 border border-slate-700">
-        <span>📁</span><span>Subir archivo</span>
-      </button>
-      <input ref="fileInputRef" type="file" accept="image/*" @change="onFileSelected" class="hidden" />
-    </div>
-
-    <select v-if="cameras.length > 1 && isCameraActive" v-model="selectedCameraId" @change="switchCamera" class="mt-3 bg-slate-950 border border-slate-800 text-slate-300 text-xs rounded-xl px-3 py-2 outline-none w-full max-w-xs">
-      <option v-for="cam in cameras" :key="cam.deviceId" :value="cam.deviceId">{{ cam.label || `Cámara ${cameras.indexOf(cam) + 1}` }}</option>
-    </select>
+    <input ref="fileInputRef" type="file" accept="image/*" @change="onFileSelected" class="hidden" />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 
-const emit = defineProps({
+const props = defineProps({
   onImageCaptured: { type: Function, required: true }
 })
 
@@ -94,7 +85,8 @@ function stopCamera() {
   isCameraActive.value = false
 }
 
-async function switchCamera() {
+async function switchCamera(deviceId) {
+  selectedCameraId.value = deviceId
   stopCamera()
   await startCamera()
 }
@@ -105,9 +97,8 @@ function capturePhoto() {
   const vw = video.videoWidth || 640
   const vh = video.videoHeight || 480
 
-  // Forzar relación de aspecto vertical 3:4 en el recorte
   const canvas = document.createElement('canvas')
-  const targetRatio = 3 / 4
+  const targetRatio = 2.5 / 3.5
 
   let sourceWidth = vw
   let sourceHeight = vh
@@ -123,14 +114,14 @@ function capturePhoto() {
   }
 
   canvas.width = 600
-  canvas.height = 800
+  canvas.height = 840
   const ctx = canvas.getContext('2d')
   ctx.drawImage(video, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, canvas.width, canvas.height)
 
   const dataUrl = canvas.toDataURL('image/jpeg', 0.9)
   previewUrl.value = dataUrl
   stopCamera()
-  emit.onImageCaptured(dataUrl)
+  props.onImageCaptured(dataUrl)
 }
 
 function triggerFileInput() {
@@ -145,7 +136,7 @@ function onFileSelected(e) {
     const dataUrl = evt.target.result
     previewUrl.value = dataUrl
     stopCamera()
-    emit.onImageCaptured(dataUrl)
+    props.onImageCaptured(dataUrl)
   }
   reader.readAsDataURL(file)
 }
@@ -165,5 +156,16 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
   stopCamera()
+})
+
+defineExpose({
+  isCameraActive,
+  cameras,
+  selectedCameraId,
+  startCamera,
+  stopCamera,
+  switchCamera,
+  capturePhoto,
+  triggerFileInput
 })
 </script>

@@ -1,56 +1,80 @@
 <template>
-  <div class="max-w-7xl mx-auto space-y-8 pb-12">
-    <!-- Panel de estadísticas y acciones -->
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl flex flex-col md:flex-row justify-between items-center gap-6">
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 w-full md:w-auto">
-        <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800 text-center">
-          <span class="text-xs text-slate-400 block">Cartas Únicas</span>
-          <span class="text-2xl font-black text-white font-mono">{{ totalUnique }}</span>
+  <div class="max-w-7xl mx-auto space-y-6 pb-12">
+    <!-- Panel Dashboard de métricas y acciones globales -->
+    <div class="panel-card flex flex-col md:flex-row justify-between items-center gap-6">
+      
+      <!-- Bloques de estadísticas -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 w-full md:w-auto flex-grow">
+        <div class="panel-card-subtle text-center">
+          <span class="text-xs text-zinc-400 font-semibold block uppercase tracking-wider">Cartas Únicas</span>
+          <span class="text-2xl font-bold text-zinc-100 font-heading mt-1 block">{{ totalUnique }}</span>
         </div>
-        <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800 text-center">
-          <span class="text-xs text-slate-400 block">Total Copias</span>
-          <span class="text-2xl font-black text-white font-mono">{{ totalCopies }}</span>
+        
+        <div class="panel-card-subtle text-center">
+          <span class="text-xs text-zinc-400 font-semibold block uppercase tracking-wider">Total Copias</span>
+          <span class="text-2xl font-bold text-zinc-100 font-heading mt-1 block">{{ totalCopies }}</span>
         </div>
-        <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800 text-center col-span-2">
-          <span class="text-xs text-slate-400 block">Valor Estimado Colección</span>
-          <span class="text-2xl font-black text-emerald-400 font-mono">{{ totalValue.toFixed(2) }} €</span>
+        
+        <div class="panel-card-subtle text-center col-span-2 sm:col-span-1">
+          <span class="text-xs text-zinc-400 font-semibold block uppercase tracking-wider">Valor Estimado</span>
+          <span class="text-2xl font-bold text-emerald-400 font-heading mt-1 block">{{ totalValue.toFixed(2) }} €</span>
         </div>
       </div>
 
-      <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
-        <button @click="handleRefresh" :disabled="refreshing" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-semibold rounded-xl transition-all flex items-center space-x-2 border border-slate-700 disabled:opacity-50">
-          <span>🔄</span><span>{{ refreshing ? 'Actualizando...' : 'Actualizar precios' }}</span>
+      <!-- Botones de Acción -->
+      <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end shrink-0">
+        <button type="button" @click="handleRefresh" :disabled="refreshing" class="btn-secondary text-xs sm:text-sm">
+          <svg class="w-4 h-4 shrink-0" :class="{ 'animate-spin': refreshing }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span>{{ refreshing ? 'Actualizando...' : 'Actualizar precios' }}</span>
         </button>
-        <button @click="handleExportExcel" :disabled="exporting" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-emerald-600/30 transition-all flex items-center space-x-2 disabled:opacity-50">
-          <span>📊</span><span>{{ exporting ? 'Exportando...' : 'Exportar Excel' }}</span>
+
+        <button type="button" @click="handleExportExcel" :disabled="exporting" class="btn-primary text-xs sm:text-sm bg-emerald-600 hover:bg-emerald-500 border-emerald-500/30 shadow-emerald-950/40">
+          <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <span>{{ exporting ? 'Exportando...' : 'Exportar Excel' }}</span>
         </button>
       </div>
     </div>
 
-    <!-- Filtros y búsqueda -->
+    <!-- Controles de Filtros y Búsqueda -->
     <div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
-      <div class="relative w-full sm:w-96">
-        <input type="text" v-model="searchQuery" placeholder="Buscar en la colección por nombre o set..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 outline-none focus:border-red-500 transition-colors pl-10" />
-        <span class="absolute left-3.5 top-3 text-slate-500">🔍</span>
+      <!-- Input de búsqueda -->
+      <div class="relative w-full sm:w-80">
+        <input type="text" v-model="searchQuery" placeholder="Buscar por nombre o set..." class="input-field pl-9 font-sans" />
+        <svg class="w-4 h-4 text-zinc-500 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
       </div>
 
-      <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
-        <select v-model="selectedSet" class="bg-slate-900 border border-slate-800 text-slate-300 text-sm rounded-xl px-4 py-2.5 outline-none focus:border-red-500 transition-colors">
+      <!-- Filtro por set -->
+      <div class="w-full sm:w-auto">
+        <select v-model="selectedSet" class="select-field w-full sm:w-64 font-sans text-xs">
           <option value="">Todas las expansiones</option>
           <option v-for="s in uniqueSets" :key="s" :value="s">{{ s }}</option>
         </select>
       </div>
     </div>
 
-    <!-- Cuadrícula de colección o vacío -->
+    <!-- Cuadrícula de Cartas o Estado Vacío -->
     <CardGrid v-if="filteredCollection.length > 0" :collection="filteredCollection" @delete="removeCard" />
 
-    <div v-else class="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center space-y-4 shadow-xl">
-      <div class="w-16 h-16 rounded-full bg-slate-950 border border-slate-800 flex items-center justify-center text-3xl mx-auto shadow">🃏</div>
-      <h3 class="text-xl font-bold text-white">Tu colección está vacía</h3>
-      <p class="text-sm text-slate-400 max-w-md mx-auto">Escanea tu primera carta de Pokémon con la cámara o súbela para empezar a construir tu colección y calcular su valor en el mercado.</p>
-      <router-link to="/" class="inline-block px-6 py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl shadow-lg shadow-red-600/30 transition-all">
-        📷 Escanear primera carta
+    <div v-else class="panel-card p-12 text-center space-y-4 shadow-2xl">
+      <div class="w-16 h-16 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-center text-zinc-500 mx-auto">
+        <svg class="w-8 h-8 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        </svg>
+      </div>
+      <div>
+        <h3 class="text-lg font-bold text-zinc-100 font-heading">Tu colección está vacía</h3>
+        <p class="text-xs text-zinc-400 max-w-md mx-auto mt-1 leading-relaxed">
+          Escanea tu primera carta de Pokémon con la cámara o sube un archivo para calcular el valor del mercado en tiempo real.
+        </p>
+      </div>
+      <router-link to="/" class="btn-primary inline-flex mt-2">
+        <span>Escanear primera carta</span>
       </router-link>
     </div>
   </div>
@@ -73,7 +97,6 @@ const exporting = ref(false)
 
 const totalUnique = computed(() => props.collection.length)
 const totalCopies = computed(() => props.collection.reduce((acc, c) => acc + (c.quantity || 1), 0))
-// El valor de cada línea lo calcula el servidor (value_eur): aquí solo se suma
 const totalValue = computed(() => props.collection.reduce((acc, c) => acc + (c.value_eur || 0), 0))
 
 const uniqueSets = computed(() => {
