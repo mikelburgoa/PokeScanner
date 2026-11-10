@@ -1,28 +1,14 @@
-"""Ajustes de IA del usuario (proveedor, claves y modelos) en server/data/settings.json.
+"""Ajustes de IA del usuario (proveedor, claves y modelos), guardados en <carpeta de datos>/settings.json.
 
-Pensado para uso local: el archivo queda ignorado por git (server/data/*.json) y el servidor
-nunca devuelve una clave al navegador, solo si existe o no. El .env sigue funcionando
-como alternativa: si no hay clave guardada en Ajustes, se usa la de las variables de entorno.
+Pensado para uso local: el servidor nunca devuelve una clave al navegador, solo si existe o no.
+El .env sigue funcionando como alternativa: si no hay clave guardada en Ajustes, se usa la del entorno.
 """
 import json
 import os
 import threading
-from pathlib import Path
+from urllib.parse import urlparse
 
-try:
-    from dotenv import load_dotenv
-except ImportError:  # uvicorn[standard] ya lo instala; si faltara, simplemente se ignora el .env
-    load_dotenv = None
-
-SERVER_DIR = Path(__file__).resolve().parent.parent
-DATA_DIR = SERVER_DIR / "data"
-DATA_DIR.mkdir(exist_ok=True)
-SETTINGS_FILE = DATA_DIR / "settings.json"
-
-if load_dotenv:
-    for _p in (SERVER_DIR.parent / ".env", SERVER_DIR / ".env"):
-        if _p.exists():
-            load_dotenv(_p)
+from core import config
 
 KEYED = ("gemini", "anthropic", "openai")  # proveedores que necesitan API key
 PROVIDERS = KEYED + ("ollama",)
@@ -34,6 +20,7 @@ DEFAULT_MODELS = {
     "ollama": "qwen2.5vl",
 }
 DEFAULT_OLLAMA_URL = "http://localhost:11434"
+_LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
 
 _LOCK = threading.RLock()
 
@@ -50,7 +37,7 @@ def _env_key(provider: str) -> str:
 
 def _read() -> dict:
     try:
-        d = json.loads(SETTINGS_FILE.read_text(encoding="utf-8"))
+        d = json.loads(config.SETTINGS_FILE.read_text(encoding="utf-8"))
         return d if isinstance(d, dict) else {}
     except (OSError, ValueError):
         return {}
@@ -79,6 +66,7 @@ def public() -> dict:
     return {
         "provider": s["provider"],
         "ollamaUrl": s["ollama_url"],
+        "dataDir": str(config.DATA_DIR),
         "providers": {
             p: {
                 "label": LABELS[p],
@@ -89,6 +77,19 @@ def public() -> dict:
             for p in PROVIDERS
         },
     }
+
+
+def _check_ollama_url(url: str) -> None:
+    """Ollama debe estar en este equipo: si no, una orden maliciosa podría enviar tus fotos a otro servidor."""
+    try:
+        host = (urlparse(url).hostname or "").lower()
+    except ValueError:
+        host = ""
+    if host not in _LOCAL_HOSTS and os.environ.get("POKESCANNER_ALLOW_REMOTE_OLLAMA") != "1":
+        raise ValueError(
+            "Por seguridad, Ollama debe estar en este mismo equipo (localhost). Si lo tienes en otro PC "
+            "de tu red, define la variable de entorno POKESCANNER_ALLOW_REMOTE_OLLAMA=1."
+        )
 
 
 def update(patch: dict) -> None:
@@ -124,14 +125,16 @@ def update(patch: dict) -> None:
         url = patch.get("ollamaUrl")
         if url is not None:
             url = url.strip().rstrip("/")
-            if url and not url.startswith(("http://", "https://")):
-                raise ValueError("La URL de Ollama debe empezar por http:// o https://")
+            if url:
+                if not url.startswith(("http://", "https://")):
+                    raise ValueError("La URL de Ollama debe empezar por http:// o https://")
+                _check_ollama_url(url)
             d["ollama_url"] = url or DEFAULT_OLLAMA_URL
 
-        tmp = SETTINGS_FILE.with_suffix(".tmp")
+        tmp = config.SETTINGS_FILE.with_suffix(".tmp")
         tmp.write_text(json.dumps(d, ensure_ascii=False, indent=1), encoding="utf-8")
         try:
             os.chmod(tmp, 0o600)  # solo el usuario (en Windows se ignora)
         except OSError:
             pass
-        os.replace(str(tmp), str(SETTINGS_FILE))
+        os.replace(str(tmp), str(config.SETTINGS_FILE))

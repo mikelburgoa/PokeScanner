@@ -76,6 +76,7 @@
 
 <script setup>
 import { ref } from 'vue'
+import { cardmarketUrl as getCardmarketUrl, tcgplayerUrl as getTcgplayerUrl } from '../utils/links'
 
 const props = defineProps({
   card: { type: Object, required: true }
@@ -84,18 +85,6 @@ const emit = defineEmits(['save', 'cancel'])
 
 const condition = ref('NM')
 const quantity = ref(1)
-
-function getCardmarketUrl(c) {
-  if (c.cardmarket_url && c.cardmarket_url.includes('idProduct=')) return c.cardmarket_url
-  const q = `${c.name || ''} ${c.number || ''}`.trim()
-  return `https://www.cardmarket.com/es/Pokemon/Products/Singles?searchString=${encodeURIComponent(q)}`
-}
-
-function getTcgplayerUrl(c) {
-  if (c.tcgplayer_url && c.tcgplayer_url.includes('/product/')) return c.tcgplayer_url
-  const q = `${c.name || ''} ${c.number || ''}`.trim()
-  return `https://www.tcgplayer.com/search/pokemon/product?q=${encodeURIComponent(q)}`
-}
 
 function save() {
   emit('save', {

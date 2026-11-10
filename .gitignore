@@ -1,10 +1,14 @@
 # Entorno y claves
 .env
 
-# Persistencia local (Colección y Excel exportado)
+# Datos del usuario: ahora viven fuera del proyecto (ver README). Estas rutas solo protegen
+# restos de versiones anteriores que aún queden en server/data y server/excel
 server/data/collection.json
 server/data/*.json
 server/excel/
+
+# Registros del arranque (scripts/lanzador_oculto.vbs)
+logs/
 
 # Dependencias y construcciones
 node_modules/

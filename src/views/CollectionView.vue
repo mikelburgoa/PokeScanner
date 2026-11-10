@@ -71,18 +71,10 @@ const selectedSet = ref('')
 const refreshing = ref(false)
 const exporting = ref(false)
 
-const COND_MULT = { NM: 1.0, LP: 0.85, MP: 0.70, HP: 0.50 }
-
 const totalUnique = computed(() => props.collection.length)
 const totalCopies = computed(() => props.collection.reduce((acc, c) => acc + (c.quantity || 1), 0))
-const totalValue = computed(() => {
-  return props.collection.reduce((acc, c) => {
-    const mult = COND_MULT[(c.condition || 'NM').toUpperCase()] || 1.0
-    const price = (c.price_eur || 0) * mult
-    const qty = c.quantity || 1
-    return acc + (price * qty)
-  }, 0)
-})
+// El valor de cada línea lo calcula el servidor (value_eur): aquí solo se suma
+const totalValue = computed(() => props.collection.reduce((acc, c) => acc + (c.value_eur || 0), 0))
 
 const uniqueSets = computed(() => {
   const sets = props.collection.map(c => c.set || 'Sin Expansión')

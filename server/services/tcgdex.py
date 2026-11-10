@@ -5,14 +5,10 @@ import json
 import re
 import concurrent.futures
 
+from core.errors import ApiError
+
 TCGDEX_BASE = os.environ.get("CC_TCGDEX_BASE", "https://api.tcgdex.net/v2")
 TCG_LANG = os.environ.get("CC_TCG_LANG", "es")
-
-class ApiError(Exception):
-    def __init__(self, code, msg):
-        super().__init__(msg)
-        self.code = code
-        self.msg = msg
 
 def norm_number(n):
     if not n:

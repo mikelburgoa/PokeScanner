@@ -17,13 +17,18 @@
         <h2 class="text-xl font-black text-white">🤖 Lectura de fotos (IA)</h2>
         <p class="text-sm text-slate-400 mt-1">
           Elige qué IA identifica tus cartas. Las claves se guardan solo en tu equipo
-          (<code class="font-mono text-slate-300">server/data/settings.json</code>) y no se vuelven a mostrar.
+          (<code class="font-mono text-slate-300">settings.json</code>) y no se vuelven a mostrar.
         </p>
       </div>
 
       <p v-if="!info" class="text-sm text-slate-400">Cargando…</p>
 
       <template v-else>
+        <p class="text-xs text-slate-500">
+          📁 Tus datos (colección, Excel, copias de seguridad y claves) se guardan solo en tu equipo, en:
+          <code class="font-mono text-slate-300 break-all">{{ info.dataDir }}</code>
+        </p>
+
         <div>
           <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1" for="ai-provider">Proveedor</label>
           <select id="ai-provider" v-model="form.provider" class="w-full bg-slate-950 border border-slate-800 text-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-red-500 transition-colors">
@@ -111,11 +116,9 @@
 import { ref, reactive, onMounted } from 'vue'
 import { getSettings, saveSettings, clearExcel, clearCollection } from '../services/api'
 
-// App.vue pasa estos dos a todas las vistas desde <router-view>
 defineProps({ collection: { type: Array, default: () => [] } })
 const emit = defineEmits(['refreshCollection'])
 
-// Textos fijos de cada proveedor (el estado real viene del servidor)
 const META = {
   gemini: {
     hint: 'Gratis (con límites) y sin tarjeta.',
@@ -140,7 +143,7 @@ const META = {
 }
 const KEYED = ['gemini', 'anthropic', 'openai']
 
-const info = ref(null) // respuesta de GET /api/settings
+const info = ref(null)
 const saving = ref(false)
 const notice = ref(null)
 let noticeTimer
@@ -210,12 +213,12 @@ async function run(fn, okMsg, refresh = false) {
 
 function deleteExcel() {
   if (!confirm('¿Deseas eliminar el archivo coleccion_pokemon.xlsx del servidor?')) return
-  run(clearExcel, 'Archivo Excel eliminado correctamente.')
+  run(() => clearExcel(), 'Archivo Excel eliminado correctamente.')
 }
 
 function emptyCollection() {
   if (!confirm('¿Seguro que quieres vaciar la colección entera? Se borrarán todas las cartas.')) return
-  run(clearCollection, 'Colección vaciada.', true)
+  run(() => clearCollection(), 'Colección vaciada.', true)
 }
 
 function resetAll() {

@@ -25,7 +25,7 @@
           <div>
             <p class="text-xs text-slate-400">Valor Estimado</p>
             <p class="text-lg font-extrabold text-emerald-400 font-mono">
-              {{ ((card.price_eur || card.price || 0) * (card.condition === 'LP' ? 0.85 : card.condition === 'MP' ? 0.70 : card.condition === 'HP' ? 0.50 : 1.0) * (card.quantity || 1)).toFixed(2) }} €
+              {{ Number(card.value_eur || 0).toFixed(2) }} €
             </p>
           </div>
 
@@ -64,24 +64,10 @@
 </template>
 
 <script setup>
+import { cardmarketUrl as getCardmarketUrl, tcgplayerUrl as getTcgplayerUrl } from '../utils/links'
+
 defineProps({
   collection: { type: Array, required: true }
 })
 defineEmits(['delete'])
-
-function getCardmarketUrl(card) {
-  if (card.cardmarket_url && card.cardmarket_url.includes('idProduct=')) {
-    return card.cardmarket_url
-  }
-  const query = `${card.name || ''} ${card.number || ''}`.trim()
-  return `https://www.cardmarket.com/es/Pokemon/Products/Singles?searchString=${encodeURIComponent(query)}`
-}
-
-function getTcgplayerUrl(card) {
-  if (card.tcgplayer_url && card.tcgplayer_url.includes('/product/')) {
-    return card.tcgplayer_url
-  }
-  const query = `${card.name || ''} ${card.number || ''}`.trim()
-  return `https://www.tcgplayer.com/search/pokemon/product?q=${encodeURIComponent(query)}`
-}
 </script>
