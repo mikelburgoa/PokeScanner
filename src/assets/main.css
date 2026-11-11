@@ -5,6 +5,13 @@
 @tailwind utilities;
 
 @layer base {
+  /* Tamaño general de la interfaz: sube/baja este porcentaje para ajustarlo (100% = tamaño anterior). Solo escritorio. */
+  @media (min-width: 1024px) {
+    html { font-size: 112.5%; }
+    /* Vista con el tamaño anterior (1 / 1.125): Colección se ve exactamente como antes del aumento general */
+    .view-classic { zoom: 0.8889; }
+  }
+
   body {
     @apply bg-zinc-950 text-zinc-100 font-sans antialiased min-h-screen selection:bg-rose-600/30 selection:text-rose-200;
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
@@ -44,7 +51,7 @@
 
   /* Entradas de formulario y selects con el gris adecuado */
   .input-field {
-    @apply w-full bg-zinc-950 border border-zinc-800 text-zinc-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500/20 transition-all placeholder:text-zinc-600 font-mono;
+    @apply w-full bg-zinc-950 border border-zinc-800 text-zinc-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500/20 transition-all placeholder:text-zinc-500 font-mono;
   }
 
   .select-field {
@@ -53,18 +60,18 @@
 
   /* Badges / Etiquetas */
   .badge-success {
-    @apply text-[10px] font-semibold rounded-full px-2.5 py-0.5 whitespace-nowrap bg-emerald-950/80 border border-emerald-500/30 text-emerald-400;
+    @apply text-xs font-semibold rounded-full px-2.5 py-0.5 whitespace-nowrap bg-emerald-950/80 border border-emerald-500/30 text-emerald-400;
   }
 
   .badge-warning {
-    @apply text-[10px] font-semibold rounded-full px-2.5 py-0.5 whitespace-nowrap bg-amber-950/80 border border-amber-500/30 text-amber-400;
+    @apply text-xs font-semibold rounded-full px-2.5 py-0.5 whitespace-nowrap bg-amber-950/80 border border-amber-500/30 text-amber-400;
   }
 
   .badge-neutral {
-    @apply text-[10px] font-semibold rounded-full px-2.5 py-0.5 whitespace-nowrap bg-zinc-800 border border-zinc-700 text-zinc-400;
+    @apply text-xs font-semibold rounded-full px-2.5 py-0.5 whitespace-nowrap bg-zinc-800 border border-zinc-700 text-zinc-400;
   }
 
   .badge-rose {
-    @apply text-[10px] font-semibold rounded-full px-2.5 py-0.5 whitespace-nowrap bg-rose-950/80 border border-rose-500/30 text-rose-300;
+    @apply text-xs font-semibold rounded-full px-2.5 py-0.5 whitespace-nowrap bg-rose-950/80 border border-rose-500/30 text-rose-300;
   }
 }

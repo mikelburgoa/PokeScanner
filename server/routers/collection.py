@@ -1,12 +1,18 @@
 """Colección: listar, añadir, modificar, borrar, actualizar precios y vaciar."""
+from datetime import datetime
+
 from fastapi import APIRouter, HTTPException
 
 from core.pricing import line_value, unit_value
-from core.storage import LOCK, read_collection, snapshot, write_collection
+from core.storage import LOCK, list_backups, read_collection, restore_latest_backup, snapshot, write_collection
 from schemas import SaveCardRequest, UpdateCardRequest
 from services.tcgdex import refresh_cards
 
 router = APIRouter(prefix="/api", tags=["colección"])
+
+
+def _now() -> str:
+    return datetime.now().isoformat(timespec="seconds")
 
 
 def _uid(card_id, condition) -> str:
@@ -30,6 +36,7 @@ def list_cards():
 def save_card(card: SaveCardRequest):
     data = card.model_dump()
     data["uid"] = _uid(card.id, card.condition)
+    data["prices_updated"] = _now()  # los precios vienen de TCGdex justo al escanear
     with LOCK:
         collection = read_collection()
         found = next((c for c in collection if c.get("uid") == data["uid"]), None)
@@ -94,6 +101,7 @@ def refresh_prices():
             for k in ("price_eur", "price_usd", "cardmarket_url", "tcgplayer_url"):
                 if f.get(k) is not None:
                     c[k] = f[k]
+            c["prices_updated"] = _now()
             count += 1
         write_collection(collection)
     return {"success": True, "count": count}
@@ -106,3 +114,17 @@ def clear_collection():
         backup = snapshot("clear")
         write_collection([])
     return {"success": True, "backup": backup.name if backup else None}
+
+
+@router.get("/backups")
+def get_backups():
+    b = list_backups()
+    return {"count": len(b), "latest": b[0] if b else None}
+
+
+@router.post("/restore_backup")
+def restore_backup():
+    latest = restore_latest_backup()
+    if not latest:
+        raise HTTPException(status_code=404, detail="No hay copias de seguridad que restaurar.")
+    return {"success": True, "restored": latest}

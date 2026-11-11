@@ -10,7 +10,7 @@
       <div>
         <div class="flex items-center justify-between">
           <span class="badge-rose font-mono uppercase tracking-wider">{{ card.set || 'Sin Expansión' }}</span>
-          <span class="text-xs font-mono text-zinc-500">#{{ card.number }}</span>
+          <span class="text-xs font-mono text-zinc-400">#{{ card.number }}</span>
         </div>
         <h2 class="text-xl font-extrabold text-zinc-100 font-heading mt-2">{{ card.name }}</h2>
         <p class="text-xs text-zinc-400 mt-0.5">{{ card.rarity }}</p>
@@ -19,15 +19,15 @@
       <!-- Cuadro de Precios de Referencia -->
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 panel-card-subtle">
         <div>
-          <span class="text-[10px] text-zinc-400 font-semibold block uppercase">Cardmarket (EUR)</span>
+          <span class="text-xs text-zinc-400 font-semibold block uppercase">Cardmarket (EUR)</span>
           <span class="text-base font-bold text-emerald-400 font-heading">{{ (card.price_eur || card.price || 0).toFixed(2) }} €</span>
         </div>
         <div>
-          <span class="text-[10px] text-zinc-400 font-semibold block uppercase">TCGplayer (USD)</span>
+          <span class="text-xs text-zinc-400 font-semibold block uppercase">TCGplayer (USD)</span>
           <span class="text-base font-bold text-sky-400 font-heading">${{ (card.price_usd || card.usd || 0).toFixed(2) }}</span>
         </div>
         <div class="col-span-2 sm:col-span-1">
-          <span class="text-[10px] text-zinc-400 font-semibold block uppercase">Enlaces directos</span>
+          <span class="text-xs text-zinc-400 font-semibold block uppercase">Enlaces directos</span>
           <div class="flex space-x-3 mt-1 text-xs font-mono font-semibold">
             <a :href="getCardmarketUrl(card)" target="_blank" rel="noopener" class="text-indigo-400 hover:underline">Cardmarket ↗</a>
             <a :href="getTcgplayerUrl(card)" target="_blank" rel="noopener" class="text-sky-400 hover:underline">TCGplayer ↗</a>

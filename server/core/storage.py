@@ -4,6 +4,7 @@ import os
 import shutil
 import threading
 from datetime import datetime
+from pathlib import Path
 
 from core import config
 
@@ -45,3 +46,31 @@ def snapshot(label: str = "manual"):
             except OSError:
                 pass
         return dest
+
+
+def list_backups() -> list:
+    """Copias de seguridad de la colección, de la más reciente a la más antigua."""
+    if not config.BACKUP_DIR.is_dir():
+        return []
+    out = []
+    for f in sorted(config.BACKUP_DIR.glob("collection-*.json"), reverse=True):
+        try:
+            cards = json.loads(f.read_text(encoding="utf-8"))
+            n = len(cards) if isinstance(cards, list) else 0
+        except (OSError, ValueError):
+            n = 0
+        out.append({"name": f.name, "cards": n, "date": datetime.fromtimestamp(f.stat().st_mtime).isoformat(timespec="seconds")})
+    return out
+
+
+def restore_latest_backup():
+    """Recupera la copia más reciente. Antes guarda el estado actual por si te arrepientes. Devuelve su info o None."""
+    with LOCK:
+        backups = list_backups()
+        if not backups:
+            return None
+        latest = backups[0]
+        items = json.loads((config.BACKUP_DIR / latest["name"]).read_text(encoding="utf-8"))
+        snapshot("antes-de-restaurar")
+        write_collection(items if isinstance(items, list) else [])
+        return latest

@@ -4,12 +4,12 @@
     <StatsHeader :collectionCount="collection.length" />
     
     <!-- Vista principal de contenido -->
-    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main class="flex-grow max-w-[88rem] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-5">
       <router-view :collection="collection" @refreshCollection="loadCollection" @cardAdded="loadCollection" />
     </main>
 
     <!-- Footer sutil en tono Carbón -->
-    <footer class="bg-zinc-900/60 border-t border-zinc-800/80 py-5 text-center text-xs text-zinc-500 font-mono flex items-center justify-center gap-2">
+    <footer class="bg-zinc-900/60 border-t border-zinc-800/80 py-3 text-center text-xs text-zinc-400 font-mono flex items-center justify-center gap-2">
       <span class="inline-block w-2 h-2 rounded-full bg-rose-600 animate-pulse"></span>
       PokeScanner — Engine Local v2.0 - Created By Mikel Burgoa
     </footer>

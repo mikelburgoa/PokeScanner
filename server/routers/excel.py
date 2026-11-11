@@ -1,5 +1,6 @@
 """Excel: generar el informe de la colección y borrarlo."""
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
 
 from core import config
 from core.errors import ApiError
@@ -31,3 +32,15 @@ def clear_excel():
             except OSError as e:
                 raise HTTPException(status_code=500, detail="No se pudo borrar el archivo Excel: %s" % e)
     return {"success": True}
+
+
+@router.get("/download_excel")
+def download_excel():
+    """Entrega el Excel ya generado para que el navegador lo descargue."""
+    if not config.EXCEL_FILE.is_file():
+        raise HTTPException(status_code=404, detail="Todavía no hay Excel: pulsa «Exportar Excel» primero.")
+    return FileResponse(
+        config.EXCEL_FILE,
+        filename="coleccion_pokemon.xlsx",
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )

@@ -1,11 +1,11 @@
 <template>
-  <div class="max-w-7xl mx-auto space-y-6 pb-12">
+  <div class="w-full space-y-6">
     <!-- Grid principal Dashboard: 2 Columnas -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
       
       <!-- Columna Izquierda: Visor principal de la cámara (7 cols) -->
-      <div class="lg:col-span-7 panel-card flex flex-col items-center justify-center p-6 min-h-[500px]">
-        <CameraScanner ref="scannerRef" :onImageCaptured="handleImageCaptured" />
+      <div class="lg:col-span-7 panel-card flex flex-col items-center justify-center p-6 min-h-[34rem]">
+        <CameraScanner ref="scannerRef" :onImageCaptured="handleImageCaptured" :busy="loading" />
       </div>
 
       <!-- Columna Derecha: Controles de Escaneo + Últimas Detectadas (5 cols) -->
@@ -13,14 +13,14 @@
         
         <!-- Panel 1: Controles de Escaneo -->
         <section class="panel-card space-y-4">
-          <h2 class="text-base font-bold text-zinc-100 font-heading">Controles de Escaneo</h2>
+          <h2 class="text-lg font-bold text-zinc-100 font-heading">Controles de Escaneo</h2>
           
           <div class="flex flex-col gap-3">
             <button
               v-if="!isCamActive"
               type="button"
               @click="scannerRef?.startCamera()"
-              class="btn-primary w-full py-3"
+              class="btn-primary w-full py-3.5 text-base"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -33,7 +33,7 @@
               v-else
               type="button"
               @click="scannerRef?.capturePhoto()"
-              class="btn-primary bg-emerald-600 hover:bg-emerald-500 border-emerald-500/30 shadow-emerald-950/50 animate-pulse w-full py-3"
+              class="btn-primary bg-emerald-600 hover:bg-emerald-500 border-emerald-500/30 shadow-emerald-950/50 animate-pulse w-full py-3.5 text-base"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -62,9 +62,14 @@
             </button>
           </div>
 
+          <p class="text-xs text-zinc-400 leading-relaxed">
+            <kbd class="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-200 font-mono">Espacio</kbd>
+            captura la foto cuando la cámara está activa. También puedes arrastrar una imagen al recuadro.
+          </p>
+
           <!-- Selector de fuente de cámara si hay más de una -->
           <div v-if="availableCameras.length > 1 && isCamActive" class="pt-2">
-            <label class="block text-[10px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">Fuente / Cámara</label>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-1">Fuente / Cámara</label>
             <select
               :value="scannerRef?.selectedCameraId"
               @change="scannerRef?.switchCamera($event.target.value)"
@@ -81,7 +86,7 @@
         <section class="panel-card space-y-3">
           <div class="flex items-center justify-between">
             <h2 class="text-base font-bold text-zinc-100 font-heading">Últimas Cartas Detectadas</h2>
-            <span class="text-[10px] text-zinc-500 font-mono">Feed reciente</span>
+            <span class="text-xs text-zinc-400 font-mono">Feed reciente</span>
           </div>
 
           <div v-if="recentScans.length > 0" class="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
@@ -94,12 +99,12 @@
               <div class="aspect-[2.5/3.5] bg-zinc-900 rounded-lg overflow-hidden flex items-center justify-center p-1 border border-zinc-800">
                 <img :src="card.image" :alt="card.name" class="max-h-full max-w-full object-contain" />
               </div>
-              <p class="text-[11px] font-bold text-zinc-200 truncate">{{ card.name }}</p>
-              <p class="text-[10px] text-emerald-400 font-mono font-bold">{{ Number(card.price_eur || card.price || 0).toFixed(2) }} €</p>
+              <p class="text-xs font-bold text-zinc-200 truncate">{{ card.name }}</p>
+              <p class="text-xs text-emerald-400 font-mono font-bold">{{ Number(card.price_eur || card.price || 0).toFixed(2) }} €</p>
             </div>
           </div>
 
-          <div v-else class="panel-card-subtle text-center py-6 text-xs text-zinc-500">
+          <div v-else class="panel-card-subtle text-center py-6 text-xs text-zinc-400">
             Aún no has escaneado cartas en esta sesión.
           </div>
         </section>
@@ -107,24 +112,19 @@
       </div>
     </div>
 
-    <!-- Estado de carga con IA -->
-    <div v-if="loading" class="panel-card text-center space-y-4">
-      <div class="w-10 h-10 border-3 border-rose-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-      <div>
-        <p class="font-bold text-base text-zinc-100 font-heading">Identificando carta con IA…</p>
-        <p class="text-xs text-zinc-400 mt-1">Consultando precios y datos en tiempo real.</p>
-      </div>
-    </div>
-
     <!-- Error de escaneo -->
-    <div v-if="errorMsg" class="bg-red-950/30 border border-red-500/40 rounded-2xl p-4 text-red-300 text-xs sm:text-sm flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <svg class="w-4 h-4 text-red-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div v-if="errorMsg" role="alert" class="bg-red-950/30 border border-red-500/40 rounded-2xl p-4 text-red-300 text-xs sm:text-sm flex items-start justify-between gap-4">
+      <div class="flex items-start gap-2">
+        <svg class="w-4 h-4 text-red-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <span>{{ errorMsg }}</span>
+        <div class="space-y-1">
+          <p>{{ errorMsg }}</p>
+          <p v-if="errorKind === 'scan'" class="text-red-300/80">Prueba con más luz, sin reflejos y con la carta entera y recta dentro del recuadro.</p>
+          <router-link v-if="/ajustes|api key/i.test(errorMsg)" to="/settings" class="inline-block underline font-semibold hover:text-white">Ir a Ajustes</router-link>
+        </div>
       </div>
-      <button type="button" @click="errorMsg = ''" class="text-xs font-semibold underline text-red-300 hover:text-white">
+      <button type="button" @click="errorMsg = ''" class="text-xs font-semibold underline text-red-300 hover:text-white shrink-0">
         Cerrar
       </button>
     </div>
@@ -153,7 +153,7 @@
             <img :src="cand.image" :alt="cand.name" class="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform" />
           </div>
           <span class="font-bold text-xs text-zinc-200 line-clamp-1 w-full">{{ cand.name }}</span>
-          <span class="text-[10px] text-zinc-500 font-mono mt-0.5">#{{ cand.number }}</span>
+          <span class="text-xs text-zinc-400 font-mono mt-0.5">#{{ cand.number }}</span>
         </div>
       </div>
     </div>
@@ -173,6 +173,7 @@ const emit = defineEmits(['cardAdded'])
 const scannerRef = ref(null)
 const loading = ref(false)
 const errorMsg = ref('')
+const errorKind = ref('')  // 'scan' = no se reconoció la carta; 'system' = fallo del servidor, la clave, etc.
 const selectedCard = ref(null)
 const candidates = ref([])
 const recentScans = ref([])
@@ -183,6 +184,7 @@ const availableCameras = computed(() => scannerRef.value?.cameras || [])
 async function handleImageCaptured(base64Data) {
   loading.value = true
   errorMsg.value = ''
+  errorKind.value = ''
   selectedCard.value = null
   candidates.value = []
 
@@ -190,6 +192,7 @@ async function handleImageCaptured(base64Data) {
     const res = await identifyCard(base64Data)
     if (!res.success) {
       errorMsg.value = res.message || 'No se pudo identificar la carta.'
+      errorKind.value = 'scan'
       return
     }
     candidates.value = res.candidates || []
@@ -199,9 +202,11 @@ async function handleImageCaptured(base64Data) {
       if (recentScans.value.length > 5) recentScans.value.pop()
     } else {
       errorMsg.value = 'Se identificó la carta pero no se encontró en TCGdex.'
+      errorKind.value = 'scan'
     }
   } catch (e) {
     errorMsg.value = e.message || 'Error al conectar con el servidor.'
+    errorKind.value = 'system'
   } finally {
     loading.value = false
   }

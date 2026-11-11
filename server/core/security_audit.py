@@ -6,6 +6,14 @@ from core import config
 
 def run_security_audit() -> dict:
     findings = []
+    checks = []  # lo que se ha comprobado de verdad: (nombre, nº de hallazgos antes de empezar)
+
+    def begin(name):
+        checks.append({"name": name, "ok": True, "_start": len(findings)})
+
+    def end():
+        c = checks[-1]
+        c["ok"] = len(findings) == c.pop("_start")
 
     # Determinar la raíz real del proyecto
     root_dir = Path(__file__).resolve().parent.parent.parent
@@ -16,6 +24,7 @@ def run_security_audit() -> dict:
     # ==========================================
     # 1. PROTECCIÓN DE SECRETOS Y ARCHIVOS DE CONFIGURACIÓN
     # ==========================================
+    begin("Secretos protegidos en .gitignore")
     if gitignore_path.exists():
         content = gitignore_path.read_text(encoding="utf-8", errors="ignore")
         lines = [line.strip() for line in content.splitlines() if line.strip() and not line.startswith("#")]
@@ -37,6 +46,8 @@ def run_security_audit() -> dict:
                     "fix": "Añade '.env' a tu archivo .gitignore para evitar subir variables de entorno a GitHub."
                 })
 
+    end()
+
     # ==========================================
     # 2. ESCÁNER DE CLAVES Y SECRETOS HARDCODEADOS (SAST)
     # ==========================================
@@ -47,6 +58,7 @@ def run_security_audit() -> dict:
         (r'eyJ[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*', 'Token JWT Hardcodeado')
     ]
 
+    begin("Sin claves escritas en el código")
     for py_file in server_dir.rglob("*.py"):
         if "__pycache__" in str(py_file):
             continue
@@ -63,9 +75,12 @@ def run_security_audit() -> dict:
         except Exception:
             pass
 
+    end()
+
     # ==========================================
     # 3. VERIFICACIÓN DE CONFIGURACIÓN CORS (REDES)
     # ==========================================
+    begin("CORS no abierto a todo el mundo")
     main_py = server_dir / "main.py"
     if main_py.exists():
         main_code = main_py.read_text(encoding="utf-8", errors="ignore")
@@ -77,9 +92,12 @@ def run_security_audit() -> dict:
                 "fix": "Restringe 'allow_origins' en main.py a orígenes específicos como 'http://localhost:5173'."
             })
 
+    end()
+
     # ==========================================
     # 4. SEGURIDAD DE CABECERAS Y NAVEGACIÓN (HTTP HEADERS)
     # ==========================================
+    begin("Cabeceras de seguridad y filtro Host/Origin")
     security_py = server_dir / "core" / "security.py"
     headers_protected = False
 
@@ -101,9 +119,12 @@ def run_security_audit() -> dict:
             "fix": "Añade 'X-Frame-Options: DENY' en _SECURITY_HEADERS dentro de core/security.py."
         })
 
+    end()
+
     # ==========================================
     # 5. MODO DEBUG Y RECARGA
     # ==========================================
+    begin("Modo debug desactivado")
     if main_py.exists():
         main_code = main_py.read_text(encoding="utf-8", errors="ignore")
         if "debug=True" in main_code:
@@ -114,9 +135,22 @@ def run_security_audit() -> dict:
                 "fix": "Desactiva debug=True en entornos donde vayas a exponer la aplicación a la red local o internet."
             })
 
+    end()
+
     # ==========================================
     # VERIFICACIÓN DE ALMACENAMIENTO DE DATOS
     # ==========================================
+    begin("Servidor solo accesible desde este equipo (127.0.0.1)")
+    if config.HOST not in ("127.0.0.1", "localhost", "::1"):
+        findings.append({
+            "severity": "HIGH",
+            "category": "Network Exposure",
+            "issue": "El servidor escucha en %s: cualquier equipo de tu red podría acceder a tu colección y a tus ajustes." % config.HOST,
+            "fix": "Usa HOST = '127.0.0.1' en core/config.py."
+        })
+    end()
+
+    begin("Carpeta de datos disponible")
     data_dir = Path(config.DATA_DIR)
     if not data_dir.exists():
         findings.append({
@@ -126,7 +160,10 @@ def run_security_audit() -> dict:
             "fix": "Se creará automáticamente al guardar configuraciones."
         })
 
+    end()
+
     return {
+        "checks": checks,
         "passed": len(findings) == 0,
         "total_findings": len(findings),
         "findings": findings

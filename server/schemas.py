@@ -35,6 +35,7 @@ class SaveCardRequest(BaseModel):
     tcgplayer_url: str = Field("", max_length=500)
     condition: str = "NM"
     quantity: int = Field(1, ge=1, le=9999)
+    prices_updated: str = Field("", max_length=32)
 
     @field_validator("name", "number", "rarity", "set", mode="before")
     @classmethod
@@ -82,3 +83,23 @@ class SettingsPatch(BaseModel):
     keys: Optional[Dict[str, Optional[str]]] = None  # null = borrar clave, "" = no cambiar
     models: Optional[Dict[str, str]] = None
     ollamaUrl: Optional[str] = Field(None, max_length=300)
+
+
+class TestProviderRequest(BaseModel):
+    """«Probar conexión»: lo escrito en pantalla (aunque aún no esté guardado)."""
+    provider: str
+    key: str = Field("", max_length=300)
+    model: str = Field("", max_length=100)
+    ollamaUrl: str = Field("", max_length=200)
+
+    @field_validator("provider")
+    @classmethod
+    def _prov(cls, v):
+        if v not in ("gemini", "anthropic", "openai", "ollama"):
+            raise ValueError("Proveedor no válido.")
+        return v
+
+    @field_validator("key", "model", "ollamaUrl", mode="before")
+    @classmethod
+    def _strip(cls, v):
+        return v.strip() if isinstance(v, str) else v

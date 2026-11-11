@@ -19,6 +19,11 @@ DEFAULT_MODELS = {
     "openai": "gpt-4o-mini",
     "ollama": "qwen2.5vl",
 }
+# Modelos que Google ya no ofrece: si quedaron guardados en Ajustes se ignoran y se usa el por defecto
+RETIRED_MODELS = {
+    "gemini": {"gemini-1.5-flash", "gemini-1.5-flash-8b", "gemini-1.5-pro", "gemini-2.0-flash",
+               "gemini-2.0-flash-001", "gemini-2.0-flash-lite", "gemini-pro-vision"},
+}
 DEFAULT_OLLAMA_URL = "http://localhost:11434"
 _LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
 
@@ -46,8 +51,16 @@ def _read() -> dict:
 def get() -> dict:
     d = _read()
     models = dict(DEFAULT_MODELS)
-    models.update({k: v for k, v in (d.get("models") or {}).items() if k in PROVIDERS and v})
+    retired = {}
+    for k, v in (d.get("models") or {}).items():
+        if k not in PROVIDERS or not v:
+            continue
+        if v in RETIRED_MODELS.get(k, ()):
+            retired[k] = v
+            continue
+        models[k] = v
     return {
+        "retired": retired,
         "provider": d.get("provider") if d.get("provider") in PROVIDERS + ("auto",) else "auto",
         "keys": {k: v for k, v in (d.get("keys") or {}).items() if k in KEYED and v},
         "models": models,
@@ -73,6 +86,7 @@ def public() -> dict:
                 "needsKey": p in KEYED,
                 "hasKey": bool(api_key(p)) if p in KEYED else True,
                 "model": s["models"][p],
+                "retiredModel": s["retired"].get(p, ""),
             }
             for p in PROVIDERS
         },
